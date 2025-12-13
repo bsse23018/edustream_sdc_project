@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "47816876926",
+    "project_id": "edustream-9affc",
+    "storage_bucket": "edustream-9affc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:47816876926:android:9c0b47464429ff6b7cc92f",
+        "android_client_info": {
+          "package_name": "com.example.edustream"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAXT_zBkHJWpw6554s3qN6kV63gfZK7OSU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
