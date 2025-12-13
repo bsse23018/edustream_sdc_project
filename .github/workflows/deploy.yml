@@ -29,7 +29,7 @@ jobs:
       # 4. Build for Web
       # Using HTML renderer avoids some canvaskit CORS issues on S3
       - name: Build Web App
-        run: flutter build web --web-renderer html --release
+        run: flutter build web
 
       # 5. Configure AWS Credentials
       # This uses the secrets you will set in the next step
