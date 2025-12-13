@@ -105,9 +105,9 @@ class _AuthScreenState extends State<AuthScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text("EduStream CI/CD", style: Theme.of(context).textTheme.headlineMedium!.copyWith(fontWeight: FontWeight.bold, color: const Color(0xFF6366F1))),
+                      Text("EduStream", style: Theme.of(context).textTheme.headlineMedium!.copyWith(fontWeight: FontWeight.bold, color: const Color(0xFF6366F1))),
                       const SizedBox(height: 5),
-                      Text(isLogin ? "Welcome Back Fellow" : "Start Learning", style: TextStyle(color: Colors.grey[500])),
+                      Text(isLogin ? "Welcome Back" : "Start Learning", style: TextStyle(color: Colors.grey[500])),
                       const SizedBox(height: 30),
                           
                       // Toggle Switch
