@@ -358,7 +358,7 @@ class _ProfDashboardState extends State<ProfDashboard>
                                 overflow: TextOverflow.ellipsis,
                               ),
                               subtitle: Column(
-                                crossAxisAlignment: .start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const SizedBox(height: 4),
                                   Row(
