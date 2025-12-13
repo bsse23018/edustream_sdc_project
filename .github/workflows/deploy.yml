@@ -45,4 +45,4 @@ jobs:
       # --delete removes old files so your site stays clean
       - name: Deploy to S3
         run: |
-          aws s3 sync build/web s3://${{ secrets.AWS_BUCKET_NAME }} --delete --acl public-read
+          aws s3 sync build/web s3://${{ secrets.AWS_BUCKET_NAME }} --delete
