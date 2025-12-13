@@ -16,7 +16,7 @@ class EduStreamApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'EduStream Pro',
       theme: ThemeData(
-        useMaterial3: true,
+        useMaterial3:  true,
         scaffoldBackgroundColor: const Color(0xFFF3F4F6), // Soft Grey Background
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF6366F1), // "Indigo" Primary
