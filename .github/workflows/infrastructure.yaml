@@ -1,0 +1,125 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "EduStream Task 1: Complex Network & Security Infrastructure"
+
+Parameters:
+  MyIP:
+    Type: String
+    Description: "Your Public IP address to allow SSH access (0.0.0.0/0)"
+    # You can find your IP by googling "what is my ip"
+    Default: "0.0.0.0/0"
+
+Resources:
+  # ==========================================
+  # 1. NETWORKING LAYER (Private Cloud)
+  # ==========================================
+  EduStreamVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: EduStream-Enterprise-VPC
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref EduStreamVPC
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true # Auto-assign IPs to EC2
+      AvailabilityZone: us-east-1a
+      Tags:
+        - Key: Name
+          Value: EduStream-Public-Subnet
+
+  # Gateway to the outside world
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  GatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref EduStreamVPC
+      InternetGatewayId: !Ref InternetGateway
+
+  # Routing Rules
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref EduStreamVPC
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: GatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  SubnetRouteAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  # ==========================================
+  # 2. SECURITY LAYER (Firewalls)
+  # ==========================================
+  EduStreamSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Allow SSH and API traffic"
+      VpcId: !Ref EduStreamVPC
+      SecurityGroupIngress:
+        # Rule 1: SSH (Port 22) - For Admin Access
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref MyIP
+        # Rule 2: HTTP (Port 80) - For Internal API
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  # ==========================================
+  # 3. SECRETS MANAGEMENT
+  # ==========================================
+  EduStreamCredentialsSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: "EduStream/EC2/Credentials"
+      Description: "Stores AWS Keys for the EC2 worker to access S3/DynamoDB"
+      SecretString: '{"access_key":"ASIAYS2NV2ZHLKR6XBTE", "secret_key":"norKp7AnFABKHLhaR+g2HkGPw6mpnqsFrmp3GI7C", "token":"IQoJb3JpZ2luX2VjELP//////////wEaCXVzLXdlc3QtMiJGMEQCIE/eHnLDlbU3ozixfL0k6Hufg0WGyB/b3ZUFhHtRc27zAiBa2jF8Ogbvfcjy7rwNDg8XbaE3exIB3dfGRtjQe6KoLyquAgh8EAAaDDU5MDE4NDA0NDExMCIM/no8Am8G7J2qHCAOKosCI0hukBvoCDbB7My+ybINWt19aBbQeaOoB4gMxqTRMBsH6t87YizW2JeFRA68Why7st1nQJbbc0ZoI9gOZW5PxlyCakIL7eNL4HG3SF04He0hXhStBNoNMp0w8NnvMAqAzu09Al6KaDGMIGcw8neoftKTRYWg2R4kJgZjaqYkvXOJNBTlgjBWkpCxFUsEMVW1H5tGuay1A+qaGhB0iBcuzfDhXUso44md0oLCZCAeQ/p2h8agQQsJGLAclgWDH1fN4xZ+M52VATlWCA90MkzeEWWrVGK5WU/WhVExiF2iHJB4Rw/xqkCfHhIX5/0xQ2BjYxlpCqMADpqXXNgsf66Kzan+FIb1e9dGVSHvMIqeisoGOp4BASHLDaTDLPgrQFMmr4EdbMSuoVYWpUuAWywx4IIAGX+WZ26ywNetCF8hJLAAqp2A1NhmD7CRfhEUSooKnYZrvd3HcUZXoi2NQi/UGd1GSV8eHMVn1pFhU8CmwnJpYVpN+Ni3law8MBKFBX18ahNnNhl3+ZfFDswGhG33HPHnEbYWNIMILDn5MhZ5wEE4gl7czxnudm0ywRlaaJruWLA="}'
+  # ==========================================
+  # 4. MESSAGING BUS (Decoupling Layer)
+  # ==========================================
+  TranscodingQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: EduStream-Transcode-Jobs
+      MessageRetentionPeriod: 86400 # 1 day
+      VisibilityTimeout: 300 # 5 minutes for EC2 to process
+
+Outputs:
+  VPCID:
+    Description: VPC ID
+    Value: !Ref EduStreamVPC
+    Export:
+      Name: EduStream-VPCID
+  SubnetID:
+    Description: Public Subnet ID
+    Value: !Ref PublicSubnet
+    Export:
+      Name: EduStream-SubnetID
+  SecurityGroupID:
+    Description: Security Group ID
+    Value: !Ref EduStreamSecurityGroup
+    Export:
+      Name: EduStream-SGID
+  QueueURL:
+    Description: SQS Queue URL
+    Value: !Ref TranscodingQueue
+    Export:
+      Name: EduStream-SQS-URL

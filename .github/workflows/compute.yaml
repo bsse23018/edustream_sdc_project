@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "EduStream Task 2: Hybrid Compute Layer (EC2 + FFmpeg)"
+
+Parameters:
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: "edustream-key"
+    Description: "Name of the existing EC2 KeyPair to enable SSH access"
+
+Resources:
+  # ==========================================
+  # 1. THE HEAVY WORKER (Microservice C)
+  # ==========================================
+  DeepWorkerInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.small
+      # Ubuntu 22.04 LTS (us-east-1) - Best for FFmpeg tools
+      ImageId: ami-0c7217cdde317cfec
+
+      # Networking (Imported from Infra Stack)
+      SubnetId:
+        Fn::ImportValue: EduStream-SubnetID
+      SecurityGroupIds:
+        - Fn::ImportValue: EduStream-SGID
+
+      # Identity (Pre-existing Lab Role)
+      IamInstanceProfile: "LabInstanceProfile"
+
+      KeyName: !Ref KeyName
+
+      Tags:
+        - Key: Name
+          Value: EduStream-Deep-Worker-Node
+        - Key: Role
+          Value: FFmpeg-Transcoder
+
+      # AUTOMATION: This script runs once when server starts
+      # It installs the complex dependencies automatically
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          apt-get update -y
+          # Install Python and FFmpeg (Video Processing Engine)
+          apt-get install -y python3-pip ffmpeg unzip
+          # Install AWS SDK
+          pip3 install boto3 requests
+          # Signal completion (Optional logging)
+          echo "EduStream Initialization Complete" > /home/ubuntu/status.log
+
+Outputs:
+  WorkerPublicIP:
+    Description: Public IP of the Worker Node
+    Value: !GetAtt DeepWorkerInstance.PublicIp

@@ -1,0 +1,116 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "EduStream Task 3 & 4: AI Orchestration (Lambda + Step Functions)"
+
+Resources:
+  # ==========================================
+  # 1. THE AI WORKER (Microservice E)
+  # ==========================================
+  AIWorkerFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: EduStream-AI-Microservice
+      Handler: index.lambda_handler
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/LabRole"
+      Runtime: python3.9
+      Timeout: 10
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          
+          def lambda_handler(event, context):
+              operation = event.get('operation', 'localize')
+              text_input = event.get('text', 'Introduction to calculus.')
+          
+              if operation == 'localize':
+                  # Simulating Amazon Translate Fault Tolerance
+                  try:
+                      client = boto3.client('translate')
+                      # This line will intentionally fail in Lab
+                      client.translate_text(Text="Test", SourceLanguageCode='en', TargetLanguageCode='fr')
+                  except Exception as e:
+                      print(f"AI Service Access Denied. Using Simulation. Error: {e}")
+          
+                  return {
+                      "status": "success",
+                      "data": {
+                          "en": text_input,
+                          "fr": f"Le {text_input} (Simulated)",
+                          "es": f"El {text_input} (Simulated)"
+                      }
+                  }
+          
+              elif operation == 'classify':
+                  # Simulating SageMaker Logic
+                  return {"tags": ["Science", "Education"], "confidence": 0.99}
+          
+              return {"error": "Unknown Op"}
+
+  # ==========================================
+  # 2. THE BRAIN (Updated State Machine)
+  # ==========================================
+  EduStreamWorkflow:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: EduStream-Enterprise-Workflow
+      StateMachineType: STANDARD
+      RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/LabRole"
+      DefinitionString:
+        !Sub |
+        {
+          "Comment": "AI Orchestration Workflow",
+          "StartAt": "ValidateUpload",
+          "States": {
+            "ValidateUpload": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.file_type",
+                  "StringEquals": "mp4",
+                  "Next": "ParallelProcess"
+                }
+              ],
+              "Default": "MarkAsInvalid"
+            },
+            "MarkAsInvalid": {
+              "Type": "Fail", 
+              "Error": "FormatError" 
+            },
+            "ParallelProcess": {
+              "Type": "Parallel",
+              "Next": "Finalize",
+              "Branches": [
+                {
+                  "StartAt": "SageMakerClassify",
+                  "States": {
+                    "SageMakerClassify": {
+                      "Type": "Task",
+                      "Resource": "${AIWorkerFunction.Arn}",
+                      "Parameters": { "operation": "classify", "text.$": "$.filename" },
+                      "End": true
+                    }
+                  }
+                },
+                {
+                  "StartAt": "TranslateLocalize",
+                  "States": {
+                    "TranslateLocalize": {
+                      "Type": "Task",
+                      "Resource": "${AIWorkerFunction.Arn}",
+                      "Parameters": { "operation": "localize", "text.$": "$.filename" },
+                      "End": true
+                    }
+                  }
+                }
+              ]
+            },
+            "Finalize": {
+              "Type": "Pass",
+              "End": true
+            }
+          }
+        }
+
+Outputs:
+  AIWorkerArn:
+    Value: !GetAtt AIWorkerFunction.Arn
