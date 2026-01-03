@@ -37,8 +37,7 @@ Traditional monolithic LMS platforms crash during high-traffic exam uploads. Edu
 
 The system moves beyond simple Serverless functions into a **Hybrid VPC Model**.
 
-<img src="a.png" alt="EduStream Logo" width="180" height="180">
-*> Note: Replace this link with your final "4-Zone" Diagram image*
+<img src="a.png" alt="EduStream Logo" width="280" height="280">
 
 ### The "Hybrid Bridge" Design
 | Layer | Tech Stack | Responsibility |
